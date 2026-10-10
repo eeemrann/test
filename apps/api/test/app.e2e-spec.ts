@@ -21,15 +21,10 @@ import { AuthorizationService } from './../src/authorization/authorization.servi
 import type { AuthenticatedUser } from './../src/auth/types/auth.types.js';
 import { DatabaseService } from './../src/database/database.service.js';
 import { refreshSessions, users } from './../src/database/schema.js';
+import { e2eAccountEmails, testPassword } from './e2e/accounts.js';
 
 function seedPassword(key: string): string {
-  const password = process.env[key];
-
-  if (!password) {
-    throw new Error(`${key} is required for local e2e tests`);
-  }
-
-  return password;
+  return testPassword(key);
 }
 
 function refreshCookiePair(response: { headers: Record<string, unknown> }): string {
@@ -122,9 +117,9 @@ describe('Application authentication (e2e)', () => {
   });
 
   it.each([
-    ['ADMIN', 'admin@office.local', 'SEED_ADMIN_PASSWORD'],
-    ['MANAGER', 'eng.manager@office.local', 'SEED_MANAGER_PASSWORD'],
-    ['EMPLOYEE', 'eng.employee@office.local', 'SEED_EMPLOYEE_PASSWORD'],
+    ['ADMIN', e2eAccountEmails.admin, 'SEED_ADMIN_PASSWORD'],
+    ['MANAGER', e2eAccountEmails.engineeringManager, 'SEED_MANAGER_PASSWORD'],
+    ['EMPLOYEE', e2eAccountEmails.engineeringEmployee, 'SEED_EMPLOYEE_PASSWORD'],
   ] as const)('logs in a valid %s account', async (role, email, passwordKey) => {
     const password = seedPassword(passwordKey);
 
@@ -145,7 +140,7 @@ describe('Application authentication (e2e)', () => {
   it('rejects incorrect and unknown credentials generically', async () => {
     await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin@office.local', password: 'Wrong.Password.123!' })
+      .send({ email: e2eAccountEmails.admin, password: 'Wrong.Password.123!' })
       .expect(401)
       .expect(({ body }) => {
         expect(body.message).toBe('Invalid email or password');
@@ -176,7 +171,7 @@ describe('Application authentication (e2e)', () => {
 
     const login = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin@office.local', password })
+      .send({ email: e2eAccountEmails.admin, password })
       .expect(201);
     const token = login.body.accessToken as string;
 
@@ -188,7 +183,7 @@ describe('Application authentication (e2e)', () => {
     expect(me.body).toMatchObject({
       id: login.body.user.id,
       fullName: 'System Admin',
-      email: 'admin@office.local',
+      email: e2eAccountEmails.admin,
       role: 'ADMIN',
       teamId: null,
       isActive: true,
@@ -214,7 +209,7 @@ describe('Application authentication (e2e)', () => {
     const password = seedPassword('SEED_ADMIN_PASSWORD');
     const login = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin@office.local', password })
+      .send({ email: e2eAccountEmails.admin, password })
       .expect(201);
     const expiredToken = app
       .get(JwtService)
@@ -230,7 +225,7 @@ describe('Application authentication (e2e)', () => {
     const login = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        email: 'admin@office.local',
+        email: e2eAccountEmails.admin,
         password: seedPassword('SEED_ADMIN_PASSWORD'),
       })
       .expect(201);
@@ -267,7 +262,7 @@ describe('Application authentication (e2e)', () => {
     const login = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        email: 'admin@office.local',
+        email: e2eAccountEmails.admin,
         password: seedPassword('SEED_ADMIN_PASSWORD'),
       })
       .expect(201);
@@ -282,7 +277,7 @@ describe('Application authentication (e2e)', () => {
     expect(refresh.body).toMatchObject({
       tokenType: 'Bearer',
       expiresIn: 900,
-      user: { email: 'admin@office.local', role: 'ADMIN' },
+      user: { email: e2eAccountEmails.admin, role: 'ADMIN' },
     });
     expect(refresh.body).not.toHaveProperty('refreshToken');
     expect(replacementCookie).not.toBe(oldCookie);
@@ -349,15 +344,15 @@ describe('Application authentication (e2e)', () => {
 
   it('enforces explicit employee, manager, and admin route roles', async () => {
     const employee = await loginFor(
-      'eng.employee@office.local',
+      e2eAccountEmails.engineeringEmployee,
       'SEED_EMPLOYEE_PASSWORD',
     );
     const manager = await loginFor(
-      'eng.manager@office.local',
+      e2eAccountEmails.engineeringManager,
       'SEED_MANAGER_PASSWORD',
     );
     const admin = await loginFor(
-      'admin@office.local',
+      e2eAccountEmails.admin,
       'SEED_ADMIN_PASSWORD',
     );
 
@@ -414,7 +409,7 @@ describe('Application authentication (e2e)', () => {
 
   it('does not trust submitted or stale JWT role values', async () => {
     const employee = await loginFor(
-      'eng.employee@office.local',
+      e2eAccountEmails.engineeringEmployee,
       'SEED_EMPLOYEE_PASSWORD',
     );
     const staleRoleToken = app.get(JwtService).sign({
@@ -435,11 +430,11 @@ describe('Application authentication (e2e)', () => {
 
   it('applies team-scoped policies to the existing seeded users', async () => {
     const demoEmails = [
-      'admin@office.local',
-      'eng.manager@office.local',
-      'ops.manager@office.local',
-      'eng.employee@office.local',
-      'ops.employee@office.local',
+      e2eAccountEmails.admin,
+      e2eAccountEmails.engineeringManager,
+      e2eAccountEmails.operationsManager,
+      e2eAccountEmails.engineeringEmployee,
+      e2eAccountEmails.operationsEmployee,
     ];
     const demoUsers = await app
       .get(DatabaseService)
@@ -455,18 +450,18 @@ describe('Application authentication (e2e)', () => {
       .where(inArray(users.email, demoEmails));
     const byEmail = new Map(demoUsers.map((user) => [user.email, user]));
     const authorization = app.get(AuthorizationService);
-    const admin = byEmail.get('admin@office.local') as AuthenticatedUser;
+    const admin = byEmail.get(e2eAccountEmails.admin) as AuthenticatedUser;
     const engineeringManager = byEmail.get(
-      'eng.manager@office.local',
+      e2eAccountEmails.engineeringManager,
     ) as AuthenticatedUser;
     const operationsManager = byEmail.get(
-      'ops.manager@office.local',
+      e2eAccountEmails.operationsManager,
     ) as AuthenticatedUser;
     const engineeringEmployee = byEmail.get(
-      'eng.employee@office.local',
+      e2eAccountEmails.engineeringEmployee,
     ) as AuthenticatedUser;
     const operationsEmployee = byEmail.get(
-      'ops.employee@office.local',
+      e2eAccountEmails.operationsEmployee,
     ) as AuthenticatedUser;
 
     expect(demoUsers).toHaveLength(5);

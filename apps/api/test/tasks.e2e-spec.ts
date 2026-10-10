@@ -10,20 +10,16 @@ import {
   taskActivities,
   tasks,
 } from '../src/database/schema.js';
+import { e2eAccountEmails, testPassword } from './e2e/accounts.js';
 
-const DEMO_EMPLOYEE_EMAIL = 'eng.employee@office.local';
-const DEMO_MANAGER_EMAIL = 'eng.manager@office.local';
-const DEMO_ADMIN_EMAIL = 'admin@office.local';
+const DEMO_EMPLOYEE_EMAIL = e2eAccountEmails.engineeringEmployee;
+const DEMO_MANAGER_EMAIL = e2eAccountEmails.engineeringManager;
+const DEMO_ADMIN_EMAIL = e2eAccountEmails.admin;
+const EXPECTED_ACTIVE_EMPLOYEE_COUNT = process.env.E2E_EMPLOYEE_EMAIL ? 4 : 2;
 const TASK_PREFIX = `phase-5-2-${Date.now()}`;
 
 function password(key: string): string {
-  const value = process.env[key];
-
-  if (!value) {
-    throw new Error(`${key} is required for taskboard e2e tests`);
-  }
-
-  return value;
+  return testPassword(key);
 }
 
 describe('Taskboard core APIs (e2e)', () => {
@@ -65,7 +61,7 @@ describe('Taskboard core APIs (e2e)', () => {
 
     employee = await login(DEMO_EMPLOYEE_EMAIL, 'SEED_EMPLOYEE_PASSWORD');
     operationsEmployee = await login(
-      'ops.employee@office.local',
+      e2eAccountEmails.operationsEmployee,
       'SEED_EMPLOYEE_PASSWORD',
     );
     manager = await login(DEMO_MANAGER_EMAIL, 'SEED_MANAGER_PASSWORD');
@@ -99,9 +95,9 @@ describe('Taskboard core APIs (e2e)', () => {
     expect(response.body.pagination).toMatchObject({
       page: 1,
       limit: 10,
-      total: 2,
+      total: EXPECTED_ACTIVE_EMPLOYEE_COUNT,
     });
-    expect(response.body.data).toHaveLength(2);
+    expect(response.body.data).toHaveLength(EXPECTED_ACTIVE_EMPLOYEE_COUNT);
     expect(response.body.data.every((user: Record<string, unknown>) =>
       !('passwordHash' in user) &&
       Object.keys(user).sort().join(',') === 'email,fullName,id,teamId',
@@ -122,7 +118,7 @@ describe('Taskboard core APIs (e2e)', () => {
       (user) => user.email === DEMO_EMPLOYEE_EMAIL,
     );
     const operationsEmployee = employees.find(
-      (user) => user.email === 'ops.employee@office.local',
+      (user) => user.email === e2eAccountEmails.operationsEmployee,
     );
 
     expect(engineeringEmployee).toBeDefined();

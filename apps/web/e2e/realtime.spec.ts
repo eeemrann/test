@@ -20,15 +20,18 @@ test.describe('isolated realtime notification workflow', () => {
       await loginAs(assignee, e2eAccounts.employee)
       await assignee.goto('/app/notifications')
       await expect(assignee.getByRole('heading', { name: 'Notifications' })).toBeVisible()
+      await assignee.getByRole('button', { name: 'Mark all read' }).click()
+      await expect(assignee.getByRole('button', { name: 'Notifications, none unread' })).toBeVisible()
 
       await creator.goto('/app/tasks')
       await creator.getByRole('button', { name: 'New task' }).click()
       await creator.getByLabel('Task title').fill(`Realtime browser workflow ${Date.now()}`)
-      await creator.getByRole('option').first().click()
+      await creator.getByRole('listbox', { name: 'Active employees' }).getByRole('option').first().click()
       await creator.getByRole('button', { name: 'Create task' }).click()
 
-      await expect(assignee.getByText('Task assigned')).toBeVisible({ timeout: 15_000 })
-      await expect(assignee.getByRole('button', { name: /Notifications, [1-9]/ })).toBeVisible()
+      await expect(assignee.getByRole('heading', { name: 'Task assigned' }).last()).toBeVisible({ timeout: 15_000 })
+      await assignee.reload()
+      await expect(assignee.getByRole('button', { name: /Notifications, [1-9]\d* unread/ })).toBeVisible()
     } finally {
       await creatorContext.close()
       await assigneeContext.close()

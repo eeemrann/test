@@ -29,6 +29,7 @@ export function TaskCard({ task, onSelect, isDragDisabled = false }: TaskCardPro
       style={style}
       {...listeners}
       {...attributes}
+      aria-disabled={undefined}
       className={cn('group w-full rounded-2xl text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-500', isDragging && 'opacity-30')}
       aria-label={`Open task ${task.title}`}
     >

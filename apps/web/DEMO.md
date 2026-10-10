@@ -49,3 +49,26 @@ npm run test:e2e
 ```
 
 Public and responsive checks run without database mutations. Live authentication, task mutation, role-permission, drag-and-drop and realtime notification checks require explicit ignored environment variables and an isolated test database. Set `E2E_ENABLE_AUTH=true`, `E2E_ENABLE_MUTATIONS=true`, `E2E_ISOLATED_DATABASE=true`, and the `E2E_*` account variables only when the backend is pointed at that isolated database. Never point mutation tests at `office_management`.
+
+## Isolated browser acceptance
+
+The Phase 7.8 browser suite uses a separate PostgreSQL database and ports. It refuses non-loopback URLs and any database name other than `office_management_e2e`.
+
+From `apps/api`, configure `E2E_DATABASE_URL` and the three E2E password variables using ignored local environment files or exported variables. Passwords must be at least 16 characters and must not be committed.
+
+From `apps/web`, run:
+
+```bash
+E2E_ENABLE_AUTH=true E2E_ENABLE_MUTATIONS=true E2E_ISOLATED_DATABASE=true \
+E2E_BASE_URL=http://127.0.0.1:5175 E2E_API_BASE_URL=http://127.0.0.1:3002 \
+npm run test:e2e
+```
+
+The Playwright configuration starts the isolated backend on port 3002 and Vite on port 5175. Its setup applies the existing migration, seeds seven isolated accounts, and only the scoped cleanup command may remove acceptance task fixtures:
+
+```bash
+cd apps/api
+npm run db:e2e:cleanup
+```
+
+The normal development server and `office_management` database are not used by mutation tests.

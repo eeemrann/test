@@ -7,23 +7,34 @@ export type E2EAccount = {
   roleLabel: string
 }
 
+const isolatedFixtureDefaults = process.env.E2E_ISOLATED_DATABASE === 'true'
+  ? {
+      employeeEmail: 'e2e.eng.employee.one@office.local',
+      employeeName: 'Engineering Employee One',
+      managerEmail: 'e2e.eng.manager@office.local',
+      managerName: 'Engineering Manager',
+      adminEmail: 'e2e.admin@office.local',
+      adminName: 'System Admin',
+    }
+  : null
+
 export const e2eAccounts = {
   employee: {
-    email: process.env.E2E_EMPLOYEE_EMAIL,
+    email: process.env.E2E_EMPLOYEE_EMAIL ?? isolatedFixtureDefaults?.employeeEmail,
     password: process.env.E2E_EMPLOYEE_PASSWORD,
-    fullName: process.env.E2E_EMPLOYEE_NAME,
+    fullName: process.env.E2E_EMPLOYEE_NAME ?? isolatedFixtureDefaults?.employeeName,
     roleLabel: 'Employee',
   },
   manager: {
-    email: process.env.E2E_MANAGER_EMAIL,
+    email: process.env.E2E_MANAGER_EMAIL ?? isolatedFixtureDefaults?.managerEmail,
     password: process.env.E2E_MANAGER_PASSWORD,
-    fullName: process.env.E2E_MANAGER_NAME,
+    fullName: process.env.E2E_MANAGER_NAME ?? isolatedFixtureDefaults?.managerName,
     roleLabel: 'Manager',
   },
   admin: {
-    email: process.env.E2E_ADMIN_EMAIL,
+    email: process.env.E2E_ADMIN_EMAIL ?? isolatedFixtureDefaults?.adminEmail,
     password: process.env.E2E_ADMIN_PASSWORD,
-    fullName: process.env.E2E_ADMIN_NAME,
+    fullName: process.env.E2E_ADMIN_NAME ?? isolatedFixtureDefaults?.adminName,
     roleLabel: 'Administrator',
   },
 } satisfies Record<string, E2EAccount>

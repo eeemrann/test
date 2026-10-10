@@ -60,7 +60,7 @@ export function KanbanColumn({
         </CardTitle>
         {isFetching && !isFetchingNextPage && <RefreshCw className="size-4 animate-spin text-slate-400" aria-label="Refreshing column" />}
       </CardHeader>
-      <CardContent ref={setNodeRef} className={cn('flex flex-1 flex-col gap-3 rounded-b-xl p-3 transition-colors', isDragActive && (isValidDropTarget ? 'bg-blue-50/80 ring-2 ring-inset ring-blue-300' : 'bg-rose-50/60 ring-2 ring-inset ring-rose-200'), isOver && isValidDropTarget && 'bg-blue-100/80')}>
+      <CardContent ref={setNodeRef} aria-label={`${title} tasks`} className={cn('flex flex-1 flex-col gap-3 rounded-b-xl p-3 transition-colors', isDragActive && (isValidDropTarget ? 'bg-blue-50/80 ring-2 ring-inset ring-blue-300' : 'bg-rose-50/60 ring-2 ring-inset ring-rose-200'), isOver && isValidDropTarget && 'bg-blue-100/80')}>
         {error ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-rose-200 bg-rose-50/60 p-5 text-center">
             <AlertCircle className="size-5 text-rose-600" aria-hidden="true" />

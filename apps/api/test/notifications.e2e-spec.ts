@@ -6,17 +6,12 @@ import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { notifications } from '../src/database/schema.js';
+import { e2eAccountEmails, testPassword } from './e2e/accounts.js';
 
 const FIXTURE_TITLE = `phase-6-1-${Date.now()}`;
 
 function password(key: string): string {
-  const value = process.env[key];
-
-  if (!value) {
-    throw new Error(`${key} is required for notification e2e tests`);
-  }
-
-  return value;
+  return testPassword(key);
 }
 
 describe('Notifications inbox APIs (e2e)', () => {
@@ -56,14 +51,14 @@ describe('Notifications inbox APIs (e2e)', () => {
     database = app.get(DatabaseService);
 
     employee = await login(
-      'eng.employee@office.local',
+      e2eAccountEmails.engineeringEmployee,
       'SEED_EMPLOYEE_PASSWORD',
     );
     manager = await login(
-      'eng.manager@office.local',
+      e2eAccountEmails.engineeringManager,
       'SEED_MANAGER_PASSWORD',
     );
-    admin = await login('admin@office.local', 'SEED_ADMIN_PASSWORD');
+    admin = await login(e2eAccountEmails.admin, 'SEED_ADMIN_PASSWORD');
 
     const fixtureRows = await database.db
       .insert(notifications)

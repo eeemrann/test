@@ -11,17 +11,12 @@ import { AppModule } from '../src/app.module.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { notifications, taskActivities, tasks, users } from '../src/database/schema.js';
 import { NotificationsGateway } from '../src/realtime/notifications.gateway.js';
+import { e2eAccountEmails, testPassword } from './e2e/accounts.js';
 
 const FIXTURE_PREFIX = `phase-6-2-${Date.now()}`;
 
 function password(key: string): string {
-  const value = process.env[key];
-
-  if (!value) {
-    throw new Error(`${key} is required for realtime e2e tests`);
-  }
-
-  return value;
+  return testPassword(key);
 }
 
 describe('Secure realtime notifications (e2e)', () => {
@@ -144,18 +139,18 @@ describe('Secure realtime notifications (e2e)', () => {
     database = app.get(DatabaseService);
 
     employee = await login(
-      'eng.employee@office.local',
+      e2eAccountEmails.engineeringEmployee,
       'SEED_EMPLOYEE_PASSWORD',
     );
     operationsEmployee = await login(
-      'ops.employee@office.local',
+      e2eAccountEmails.operationsEmployee,
       'SEED_EMPLOYEE_PASSWORD',
     );
     manager = await login(
-      'eng.manager@office.local',
+      e2eAccountEmails.engineeringManager,
       'SEED_MANAGER_PASSWORD',
     );
-    admin = await login('admin@office.local', 'SEED_ADMIN_PASSWORD');
+    admin = await login(e2eAccountEmails.admin, 'SEED_ADMIN_PASSWORD');
 
     const [realtimeUser] = await database.db
       .insert(users)
@@ -520,7 +515,7 @@ describe('Secure realtime notifications (e2e)', () => {
     ).toBe(true);
 
     const freshLogin = await login(
-      'eng.employee@office.local',
+      e2eAccountEmails.engineeringEmployee,
       'SEED_EMPLOYEE_PASSWORD',
     );
     const reconnected = await connect(freshLogin.accessToken);

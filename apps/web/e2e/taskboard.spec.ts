@@ -16,7 +16,7 @@ test.describe('isolated taskboard browser workflow', () => {
     await page.getByRole('button', { name: 'New task' }).click()
     await expect(page.getByRole('heading', { name: 'Create a new task' })).toBeVisible()
     await page.getByLabel('Task title').fill(title)
-    const employeeOption = page.getByRole('option').first()
+    const employeeOption = page.getByRole('listbox', { name: 'Active employees' }).getByRole('option').first()
     await expect(employeeOption).toBeVisible()
     await employeeOption.click()
     await page.getByRole('button', { name: 'Create task' }).click()
@@ -24,9 +24,9 @@ test.describe('isolated taskboard browser workflow', () => {
     await expect(page.getByRole('button', { name: new RegExp(`Open task ${title}`) })).toBeVisible()
 
     await page.getByRole('button', { name: new RegExp(`Open task ${title}`) }).click()
-    await expect(page.getByRole('heading', { name: title })).toBeVisible()
+    await expect(page.locator('#task-details-title')).toHaveText(title)
     await expect(page.getByText('Activity', { exact: true })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Close task details' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Close task details' }).click()
   })
 })

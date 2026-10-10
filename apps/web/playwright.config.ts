@@ -1,7 +1,37 @@
 import { defineConfig } from '@playwright/test'
 
-const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173'
+const isolatedE2E = process.env.E2E_ISOLATED_DATABASE === 'true'
+const baseURL = process.env.E2E_BASE_URL ?? (isolatedE2E ? 'http://127.0.0.1:5175' : 'http://127.0.0.1:5173')
 const chromiumPath = process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/usr/bin/chromium'
+const apiBaseURL = process.env.E2E_API_BASE_URL ?? 'http://127.0.0.1:3002'
+
+const webServer = isolatedE2E
+  ? [
+      {
+        command: 'VITE_API_URL=http://127.0.0.1:3002 npm run dev -- --host 127.0.0.1 --port 5175 --strictPort',
+        url: baseURL,
+        reuseExistingServer: true,
+        timeout: 120_000,
+        stdout: 'pipe' as const,
+        stderr: 'pipe' as const,
+      },
+      {
+        command: 'npm --prefix ../api run start:e2e',
+        url: `${apiBaseURL}/health/database`,
+        reuseExistingServer: true,
+        timeout: 120_000,
+        stdout: 'pipe' as const,
+        stderr: 'pipe' as const,
+      },
+    ]
+  : {
+      command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
+      url: baseURL,
+      reuseExistingServer: true,
+      timeout: 120_000,
+      stdout: 'pipe' as const,
+      stderr: 'pipe' as const,
+    }
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,6 +42,7 @@ export default defineConfig({
     timeout: 7_000,
   },
   fullyParallel: false,
+  workers: isolatedE2E ? 1 : undefined,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: [
@@ -32,14 +63,5 @@ export default defineConfig({
       executablePath: chromiumPath,
     },
   },
-  webServer: process.env.E2E_EXTERNAL_SERVER === 'true'
-    ? undefined
-    : {
-        command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
-        url: baseURL,
-        reuseExistingServer: true,
-        timeout: 120_000,
-        stdout: 'pipe',
-        stderr: 'pipe',
-      },
+  webServer: process.env.E2E_EXTERNAL_SERVER === 'true' ? undefined : webServer,
 })
