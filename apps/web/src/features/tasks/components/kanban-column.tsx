@@ -1,8 +1,10 @@
 import { AlertCircle, ChevronDown, RefreshCw } from 'lucide-react'
+import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getApiErrorMessage } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { TaskCard } from '@/features/tasks/components/task-card'
 import type { Task, TaskStatus } from '@/features/tasks/types/task.types'
 
@@ -25,6 +27,9 @@ type KanbanColumnProps = {
   hasNextPage: boolean
   isFetchingNextPage: boolean
   onLoadMore: () => void
+  isDragActive: boolean
+  isValidDropTarget: boolean
+  canDragTask: (task: Task) => boolean
 }
 
 export function KanbanColumn({
@@ -40,7 +45,11 @@ export function KanbanColumn({
   isFetchingNextPage,
   onLoadMore,
   status,
+  isDragActive,
+  isValidDropTarget,
+  canDragTask,
 }: KanbanColumnProps) {
+  const { isOver, setNodeRef } = useDroppable({ id: status, data: { status } })
   return (
     <Card className="flex min-h-[28rem] min-w-[min(21rem,calc(100vw-2rem))] flex-1 flex-col border-slate-200/80 bg-slate-100/70 shadow-sm xl:min-w-0">
       <CardHeader className="flex-row items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
@@ -51,7 +60,7 @@ export function KanbanColumn({
         </CardTitle>
         {isFetching && !isFetchingNextPage && <RefreshCw className="size-4 animate-spin text-slate-400" aria-label="Refreshing column" />}
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-3 p-3">
+      <CardContent ref={setNodeRef} className={cn('flex flex-1 flex-col gap-3 rounded-b-xl p-3 transition-colors', isDragActive && (isValidDropTarget ? 'bg-blue-50/80 ring-2 ring-inset ring-blue-300' : 'bg-rose-50/60 ring-2 ring-inset ring-rose-200'), isOver && isValidDropTarget && 'bg-blue-100/80')}>
         {error ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-rose-200 bg-rose-50/60 p-5 text-center">
             <AlertCircle className="size-5 text-rose-600" aria-hidden="true" />
@@ -71,7 +80,7 @@ export function KanbanColumn({
         ) : (
           <>
             <div className="space-y-3">
-              {tasks.map((task) => <TaskCard key={task.id} task={task} onSelect={onSelectTask} />)}
+              {tasks.map((task) => <TaskCard key={task.id} task={task} onSelect={onSelectTask} isDragDisabled={!canDragTask(task)} />)}
             </div>
             {hasNextPage && (
               <Button type="button" variant="outline" className="mt-auto w-full" onClick={onLoadMore} disabled={isFetchingNextPage}>

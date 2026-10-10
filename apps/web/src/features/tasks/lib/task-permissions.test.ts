@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canCreateTask, canEditTask, canReassignTask, getEmployeeStatusAction } from '@/features/tasks/lib/task-permissions'
+import { canCreateTask, canDragTask, canDropTask, canEditTask, canReassignTask, getEmployeeStatusAction } from '@/features/tasks/lib/task-permissions'
 import type { AuthUser } from '@/features/auth/types/auth.types'
 import type { Task } from '@/features/tasks/types/task.types'
 
@@ -43,5 +43,15 @@ describe('task permissions', () => {
     expect(canReassignTask(user('MANAGER'), task({ teamId: 'team-2' }))).toBe(false)
     expect(canReassignTask(user('MANAGER', 'manager-1', null), task())).toBe(false)
     expect(canReassignTask(user('ADMIN', 'admin', null), task({ teamId: null }))).toBe(true)
+  })
+
+  it('limits drag status changes to server-supported transitions', () => {
+    const employeeTask = task({ assignee: { ...task().assignee, id: 'employee-1' } })
+    expect(canDragTask(user('EMPLOYEE', 'employee-1'), employeeTask)).toBe(true)
+    expect(canDropTask(user('EMPLOYEE', 'employee-1'), employeeTask, 'WORKING')).toBe(true)
+    expect(canDropTask(user('EMPLOYEE', 'employee-1'), employeeTask, 'DONE')).toBe(false)
+    expect(canDragTask(user('MANAGER'), employeeTask)).toBe(false)
+    expect(canDragTask(user('ADMIN'), task({ status: 'DONE' }))).toBe(true)
+    expect(canDropTask(user('ADMIN'), task({ status: 'DONE' }), 'PENDING')).toBe(true)
   })
 })

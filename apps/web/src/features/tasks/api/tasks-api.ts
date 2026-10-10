@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import type {
   PaginatedTasks,
+  PaginatedTaskActivities,
   PaginatedAssignableUsers,
   CreateTaskInput,
   ReassignTaskInput,
@@ -38,7 +39,12 @@ export async function getTasks({
       status,
       ...(filters.priority ? { priority: filters.priority } : {}),
       ...(filters.search ? { search: filters.search } : {}),
+      ...(filters.assignedToId ? { assignedToId: filters.assignedToId } : {}),
+      ...(filters.deadlineFrom ? { deadlineFrom: filters.deadlineFrom } : {}),
+      ...(filters.deadlineTo ? { deadlineTo: filters.deadlineTo } : {}),
       ...(filters.overdue === undefined ? {} : { overdue: filters.overdue }),
+      ...(filters.sortBy ? { sortBy: filters.sortBy } : {}),
+      ...(filters.sortOrder ? { sortOrder: filters.sortOrder } : {}),
     },
   })
 
@@ -54,6 +60,9 @@ export async function getTaskSummary(
       scope,
       ...(filters.priority ? { priority: filters.priority } : {}),
       ...(filters.search ? { search: filters.search } : {}),
+      ...(filters.assignedToId ? { assignedToId: filters.assignedToId } : {}),
+      ...(filters.deadlineFrom ? { deadlineFrom: filters.deadlineFrom } : {}),
+      ...(filters.deadlineTo ? { deadlineTo: filters.deadlineTo } : {}),
       ...(filters.overdue === undefined ? {} : { overdue: filters.overdue }),
     },
   })
@@ -63,6 +72,13 @@ export async function getTaskSummary(
 
 export async function getTaskById(id: string): Promise<Task> {
   const response = await api.get<Task>(`/tasks/${id}`)
+  return response.data
+}
+
+export async function getTaskActivities(id: string, page = 1, limit = 20): Promise<PaginatedTaskActivities> {
+  const response = await api.get<PaginatedTaskActivities>(`/tasks/${id}/activities`, {
+    params: { page, limit },
+  })
   return response.data
 }
 

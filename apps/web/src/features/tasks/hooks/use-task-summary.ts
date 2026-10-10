@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getTaskSummary } from '@/features/tasks/api/tasks-api'
 import { taskQueryKeys } from '@/features/tasks/hooks/use-tasks'
-import type { TaskListFilters, TaskScope } from '@/features/tasks/types/task.types'
+import type { TaskScope, TaskSummaryFilters } from '@/features/tasks/types/task.types'
 
 export function useTaskSummary({
   userId,
@@ -11,7 +11,7 @@ export function useTaskSummary({
 }: {
   userId: string | undefined
   scope: TaskScope
-  filters?: TaskListFilters
+  filters?: TaskSummaryFilters
   enabled?: boolean
 }) {
   return useQuery({

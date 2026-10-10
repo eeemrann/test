@@ -14,6 +14,7 @@ import { canEditTask, canReassignTask, getEmployeeStatusAction } from '@/feature
 import { EditTaskDialog } from '@/features/tasks/components/edit-task-dialog'
 import { ReassignTaskDialog } from '@/features/tasks/components/reassign-task-dialog'
 import { TaskStatusActions } from '@/features/tasks/components/task-status-actions'
+import { ActivityTimeline } from '@/features/tasks/components/activity-timeline'
 import type { Task } from '@/features/tasks/types/task.types'
 
 type TaskDetailsDialogProps = {
@@ -96,6 +97,7 @@ export function TaskDetailsDialog({ taskId, onClose, onActionSuccess }: TaskDeta
                 <TaskStatusActions key={`${task.id}-${task.status}`} task={task} onSuccess={(message) => onActionSuccess?.(message)} />
                 {!canEditTask(auth.currentUser, task) && !canReassignTask(auth.currentUser, task) && !canStatusAction(auth.currentUser, task) && <p className="text-sm text-slate-500">No actions are available for your role on this task.</p>}
               </section>
+              <ActivityTimeline userId={auth.currentUser?.id} taskId={task.id} />
               {editOpen && <EditTaskDialog key={`edit-${task.id}`} task={task} open onClose={() => setEditOpen(false)} onSuccess={(message) => onActionSuccess?.(message)} />}
               {reassignOpen && <ReassignTaskDialog key={`reassign-${task.id}`} task={task} open onClose={() => setReassignOpen(false)} onSuccess={(message) => onActionSuccess?.(message)} />}
             </>

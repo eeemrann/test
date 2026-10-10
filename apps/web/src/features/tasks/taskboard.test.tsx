@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   useTasks: vi.fn(),
   useTaskSummary: vi.fn(),
   useTaskDetails: vi.fn(),
+  useTaskActivities: vi.fn(),
+  useAssignableUsers: vi.fn(),
   auth: {
     currentUser: { id: 'user-1', fullName: 'Ada Lovelace', email: 'ada@office.local', role: 'MANAGER' as const, teamId: 'team-1', isActive: true },
   },
@@ -21,6 +23,14 @@ vi.mock('@/features/tasks/hooks/use-tasks', async () => {
 })
 vi.mock('@/features/tasks/hooks/use-task-summary', () => ({ useTaskSummary: mocks.useTaskSummary }))
 vi.mock('@/features/tasks/hooks/use-task-details', () => ({ useTaskDetails: mocks.useTaskDetails }))
+vi.mock('@/features/tasks/hooks/use-task-activities', () => ({
+  useTaskActivities: mocks.useTaskActivities,
+  flattenActivityPages: (pages: Array<{ data: unknown[] }> | undefined) => pages?.flatMap((page) => page.data) ?? [],
+}))
+vi.mock('@/features/tasks/hooks/use-assignable-users', () => ({
+  useAssignableUsers: mocks.useAssignableUsers,
+  flattenAssignableUsers: (pages: Array<{ data: unknown[] }> | undefined) => pages?.flatMap((page) => page.data) ?? [],
+}))
 
 const baseTask: Task = {
   id: 'task-1',
@@ -63,6 +73,8 @@ function configureBoard({
   mocks.useTaskSummary.mockReturnValue({ data: summary, isLoading: false, error: summaryError, refetch: vi.fn() })
   mocks.useTasks.mockImplementation(({ status }: { status: TaskStatus }) => columns[status])
   mocks.useTaskDetails.mockReturnValue({ data: baseTask, isLoading: false, error: null })
+  mocks.useTaskActivities.mockReturnValue({ data: { pages: [{ data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }] }, isLoading: false, error: null, refetch: vi.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: vi.fn() })
+  mocks.useAssignableUsers.mockReturnValue({ data: { pages: [{ data: [], pagination: { page: 1, limit: 100, total: 0, totalPages: 0 } }] }, isLoading: false })
 }
 
 function renderBoard() {
@@ -86,8 +98,9 @@ describe('TaskBoard', () => {
     expect(screen.getByText('Done', { selector: '[data-slot="card-title"]' })).toBeInTheDocument()
     expect(screen.getByText('Total tasks')).toBeInTheDocument()
     expect(screen.getAllByText('1', { selector: 'p' })).toHaveLength(3)
-    expect(screen.getByText('High')).toBeInTheDocument()
-    expect(screen.getAllByText(/Overdue/)).toHaveLength(2)
+    expect(screen.getByText('High', { selector: '[data-slot="badge"]' })).toBeInTheDocument()
+    expect(screen.getByText('Overdue', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.getByText(/Overdue ·/)).toBeInTheDocument()
   })
 
   it('renders useful empty states without creating task data', () => {

@@ -4,6 +4,7 @@ import {
   createTask,
   getAssignableUsers,
   getTaskById,
+  getTaskActivities,
   getTaskSummary,
   getTasks,
   reassignTask,
@@ -55,6 +56,33 @@ describe('tasks API integration', () => {
       params: { scope: 'mine', search: 'quarterly', overdue: true },
     })
     expect(mockedGet).toHaveBeenNthCalledWith(2, '/tasks/task-1')
+  })
+
+  it('serializes supported list filters and loads paginated activity history', async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } } })
+      .mockResolvedValueOnce({ data: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } } })
+
+    await getTasks({
+      scope: 'all',
+      status: 'WORKING',
+      page: 1,
+      filters: {
+        search: 'report', priority: 'HIGH', assignedToId: 'employee-1',
+        deadlineFrom: '2026-10-01T00:00:00.000Z', deadlineTo: '2026-10-31T23:59:59.999Z',
+        overdue: false, sortBy: 'deadline', sortOrder: 'asc',
+      },
+    })
+    await getTaskActivities('task-1', 2, 20)
+
+    expect(mockedGet).toHaveBeenNthCalledWith(1, '/tasks', {
+      params: {
+        page: 1, limit: 20, status: 'WORKING', search: 'report', priority: 'HIGH', assignedToId: 'employee-1',
+        deadlineFrom: '2026-10-01T00:00:00.000Z', deadlineTo: '2026-10-31T23:59:59.999Z', overdue: false,
+        sortBy: 'deadline', sortOrder: 'asc',
+      },
+    })
+    expect(mockedGet).toHaveBeenNthCalledWith(2, '/tasks/task-1/activities', { params: { page: 2, limit: 20 } })
   })
 
   it('maps task mutations to the exact backend contracts without protected fields', async () => {

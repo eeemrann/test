@@ -15,6 +15,7 @@ export const taskQueryKeys = {
   summary: (userId: string, scope: TaskScope, filters: TaskListFilters) =>
     ['tasks', userId, 'summary', scope, filters] as const,
   details: (userId: string, taskId: string) => ['tasks', userId, 'details', taskId] as const,
+  activities: (userId: string, taskId: string) => ['tasks', userId, 'activities', taskId] as const,
 }
 
 export function getNextTaskPage(lastPage: { pagination: { page: number; totalPages: number } }): number | undefined {

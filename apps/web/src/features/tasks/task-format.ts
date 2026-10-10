@@ -40,3 +40,25 @@ export function toApiDeadline(value: string): string | null {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
+
+export function toApiDateBoundary(value: string, endOfDay = false): string | undefined {
+  if (!value) return undefined
+  const date = new Date(`${value}T${endOfDay ? '23:59:59.999' : '00:00:00'}`)
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
+}
+
+export function toDateInputValue(value: string | undefined): string {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = (part: number) => String(part).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+export function getDeadlineRangeError(deadlineFrom?: string, deadlineTo?: string): string | null {
+  if (!deadlineFrom || !deadlineTo) return null
+  const from = new Date(deadlineFrom).getTime()
+  const to = new Date(deadlineTo).getTime()
+  if (Number.isNaN(from) || Number.isNaN(to) || from > to) return 'The deadline start must be on or before the deadline end.'
+  return null
+}

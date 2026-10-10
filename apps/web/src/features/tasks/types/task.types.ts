@@ -6,6 +6,12 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number]
 
 export type TaskScope = 'all' | 'mine'
 
+export const TASK_SORT_FIELDS = ['createdAt', 'updatedAt', 'deadline'] as const
+export type TaskSortField = (typeof TASK_SORT_FIELDS)[number]
+
+export const TASK_SORT_ORDERS = ['asc', 'desc'] as const
+export type TaskSortOrder = (typeof TASK_SORT_ORDERS)[number]
+
 export type TaskUser = {
   id: string
   fullName: string
@@ -59,9 +65,30 @@ export type TaskListFilters = {
   priority?: TaskPriority
   search?: string
   overdue?: boolean
+  assignedToId?: string
+  deadlineFrom?: string
+  deadlineTo?: string
+  sortBy?: TaskSortField
+  sortOrder?: TaskSortOrder
 }
 
-export type TaskSummaryFilters = Pick<TaskListFilters, 'priority' | 'search' | 'overdue'>
+export type TaskSummaryFilters = Pick<TaskListFilters, 'priority' | 'search' | 'overdue' | 'assignedToId' | 'deadlineFrom' | 'deadlineTo'>
+
+export const TASK_ACTIVITY_TYPES = ['CREATED', 'ASSIGNED', 'REASSIGNED', 'STATUS_CHANGED', 'UPDATED'] as const
+export type TaskActivityType = (typeof TASK_ACTIVITY_TYPES)[number]
+
+export type TaskActivity = {
+  id: string
+  type: TaskActivityType
+  createdAt: string
+  actor: TaskUser | null
+  metadata: Record<string, unknown> | null
+}
+
+export type PaginatedTaskActivities = {
+  data: TaskActivity[]
+  pagination: PaginationMeta
+}
 
 export type AssignableUser = {
   id: string
