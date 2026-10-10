@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { GuestRoute } from '@/features/auth/components/guest-route'
 import { ProtectedRoute } from '@/features/auth/components/protected-route'
@@ -9,6 +10,8 @@ import { NotFoundPage } from '@/pages/not-found-page'
 import { ProfilePage } from '@/pages/profile-page'
 import { SetupPage } from '@/pages/setup-page'
 import { TaskboardPage } from '@/pages/taskboard-page'
+
+const NotificationsPage = lazy(() => import('@/pages/notifications-page').then((module) => ({ default: module.NotificationsPage })))
 
 export function AppRoutes() {
   return (
@@ -26,7 +29,7 @@ export function AppRoutes() {
           <Route path="/app/calendar" element={<PlaceholderPage {...modulePageContent.calendar} />} />
           <Route path="/app/complaints" element={<PlaceholderPage {...modulePageContent.complaints} />} />
           <Route path="/app/announcements" element={<PlaceholderPage {...modulePageContent.announcements} />} />
-          <Route path="/app/notifications" element={<PlaceholderPage {...modulePageContent.notifications} />} />
+          <Route path="/app/notifications" element={<Suspense fallback={<div className="py-12 text-center text-sm text-slate-500" role="status">Loading notifications…</div>}><NotificationsPage /></Suspense>} />
           <Route path="/app/profile" element={<ProfilePage />} />
           <Route path="/app/settings" element={<PlaceholderPage {...modulePageContent.settings} />} />
           <Route path="/app/*" element={<NotFoundPage />} />

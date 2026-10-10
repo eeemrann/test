@@ -7,6 +7,7 @@ import { AppHeader } from '@/layouts/components/app-header'
 import { AppSidebar } from '@/layouts/components/app-sidebar'
 import { MobileSidebar } from '@/layouts/components/mobile-sidebar'
 import { cn } from '@/lib/utils'
+import { useRealtimeNotifications } from '@/features/notifications/hooks/use-realtime-notifications'
 
 export function AppLayout() {
   const auth = useAuth()
@@ -16,6 +17,7 @@ export function AppLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const isApplicationArea = location.pathname.startsWith('/app')
+  useRealtimeNotifications({ userId: auth.currentUser?.id, isAuthenticated: auth.isAuthenticated })
 
   const closeMobileSidebar = useCallback(() => setIsMobileSidebarOpen(false), [])
 

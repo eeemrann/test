@@ -23,6 +23,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/features/auth/hooks/use-auth', () => ({
   useAuth: () => mocks.auth,
 }))
+vi.mock('@/features/notifications/components/notification-bell', () => ({
+  NotificationBell: () => <button type="button" aria-label="Notifications">Notifications</button>,
+}))
+vi.mock('@/features/notifications/hooks/use-realtime-notifications', () => ({
+  useRealtimeNotifications: () => undefined,
+}))
 
 function renderShell(initialEntry = '/app') {
   return render(

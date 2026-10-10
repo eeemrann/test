@@ -1,8 +1,8 @@
-import { Bell, Menu } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getNavigationItem } from '@/config/navigation'
 import { UserMenu } from '@/layouts/components/user-menu'
+import { NotificationBell } from '@/features/notifications/components/notification-bell'
 
 type AppHeaderProps = {
   pathname: string
@@ -28,15 +28,7 @@ export function AppHeader({ pathname, onOpenMobileMenu, onLogout, isLoggingOut }
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2">
-        <Button
-          render={<Link to="/app/notifications" />}
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Notifications"
-        >
-          <Bell aria-hidden="true" />
-        </Button>
+        <NotificationBell />
         <UserMenu onLogout={onLogout} isLoggingOut={isLoggingOut} />
       </div>
     </header>
