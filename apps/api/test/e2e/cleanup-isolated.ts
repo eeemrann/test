@@ -5,9 +5,16 @@ import {
   assertIsolatedDatabaseUrl,
   E2E_TASK_PREFIX,
   getIsolatedDatabaseUrl,
+  isolatedAccounts,
   loadLocalEnvironment,
 } from './isolated-db.js';
-import { notifications, taskActivities, tasks } from '../../src/database/schema.js';
+import {
+  notifications,
+  refreshSessions,
+  taskActivities,
+  tasks,
+  users,
+} from '../../src/database/schema.js';
 
 loadLocalEnvironment();
 const databaseUrl = getIsolatedDatabaseUrl();
@@ -46,7 +53,17 @@ try {
     );
   }
 
-  console.log(`isolated cleanup removed ${ids.length} acceptance task(s)`);
+  const fixtureUsers = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(inArray(users.email, isolatedAccounts.map((account) => account.email)));
+  if (fixtureUsers.length > 0) {
+    await db.delete(refreshSessions).where(
+      inArray(refreshSessions.userId, fixtureUsers.map((user) => user.id)),
+    );
+  }
+
+  console.log(`isolated cleanup removed ${ids.length} acceptance task(s) and fixture sessions`);
 } finally {
   await pool.end();
 }
