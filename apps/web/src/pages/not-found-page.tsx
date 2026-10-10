@@ -1,6 +1,6 @@
 import { ArrowLeft, Compass } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/layouts/components/page-header'
 
@@ -11,9 +11,9 @@ export function NotFoundPage() {
       <Card className="bg-white/80 shadow-sm">
         <CardContent className="flex flex-col items-start gap-4 px-6 py-8">
           <p className="text-sm text-slate-600">Use the application navigation to return to a supported module.</p>
-          <Button render={<Link to="/app" />}>
+          <Link to="/app" className={buttonVariants()}>
             <ArrowLeft aria-hidden="true" />Back to dashboard
-          </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>

@@ -9,8 +9,8 @@ import { modulePageContent, PlaceholderPage } from '@/pages/module-pages'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { ProfilePage } from '@/pages/profile-page'
 import { SetupPage } from '@/pages/setup-page'
-import { TaskboardPage } from '@/pages/taskboard-page'
 
+const TaskboardPage = lazy(() => import('@/pages/taskboard-page').then((module) => ({ default: module.TaskboardPage })))
 const NotificationsPage = lazy(() => import('@/pages/notifications-page').then((module) => ({ default: module.NotificationsPage })))
 
 export function AppRoutes() {
@@ -23,7 +23,7 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/app" element={<AppPage />} />
-          <Route path="/app/tasks" element={<TaskboardPage />} />
+          <Route path="/app/tasks" element={<Suspense fallback={<div className="py-12 text-center text-sm text-slate-500" role="status">Loading taskboard…</div>}><TaskboardPage /></Suspense>} />
           <Route path="/app/attendance" element={<PlaceholderPage {...modulePageContent.attendance} />} />
           <Route path="/app/leaves" element={<PlaceholderPage {...modulePageContent.leaves} />} />
           <Route path="/app/calendar" element={<PlaceholderPage {...modulePageContent.calendar} />} />

@@ -1,7 +1,7 @@
 import { Building2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { AppHeader } from '@/layouts/components/app-header'
 import { AppSidebar } from '@/layouts/components/app-sidebar'
@@ -52,13 +52,12 @@ export function AppLayout() {
                 <span className="block text-xs text-slate-500">Operations workspace</span>
               </span>
             </NavLink>
-            <Button
-              render={<NavLink to={auth.isAuthenticated ? '/app' : '/login'} />}
-              variant="outline"
-              size="sm"
+            <NavLink
+              to={auth.isAuthenticated ? '/app' : '/login'}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
               {auth.isAuthenticated ? 'Open workspace' : 'Sign in'}
-            </Button>
+            </NavLink>
           </div>
         </header>
         <main className="relative mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
