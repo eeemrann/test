@@ -9,3 +9,4 @@ dist/
 logs/
 tmp/
 temp/
+test-results/
