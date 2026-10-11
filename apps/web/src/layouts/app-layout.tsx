@@ -1,7 +1,7 @@
 import { Building2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { AppHeader } from '@/layouts/components/app-header'
 import { AppSidebar } from '@/layouts/components/app-sidebar'

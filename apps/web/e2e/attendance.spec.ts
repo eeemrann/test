@@ -42,7 +42,7 @@ test.describe('registration and attendance browser workflows', () => {
     await page.goto('/app/admin/registrations')
     await expect(page.getByRole('heading', { name: 'Registration approvals' })).toBeVisible()
     const row = page.getByText(email).locator('..').locator('..')
-    await expect(row).toContainText('PENDING')
+    await expect(row).toContainText('Pending')
     await row.getByRole('button', { name: 'Approve' }).click()
     await expect(page.getByText(email)).toHaveCount(0)
   })

@@ -93,6 +93,24 @@ describe('attendance page', () => {
     expect(screen.getByText('Present')).toBeInTheDocument()
   })
 
+  it('uses server office hours and explains that late days count as present', async () => {
+    mocks.getAttendanceToday.mockResolvedValue({
+      ...today,
+      officeHours: { start: '09:30', gracePeriodEnds: '10:15' },
+    })
+    mocks.getMyAttendance.mockResolvedValue({
+      ...mine,
+      officeHours: { start: '09:30', gracePeriodEnds: '10:15' },
+      summary: { ...mine.summary, totalPresentDays: 2, totalLateDays: 1, onTimeDays: 1 },
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('9:30 AM')).toBeInTheDocument()
+    expect(screen.getByText('1 late included')).toBeInTheDocument()
+    expect(screen.getByText('Also counted as present')).toBeInTheDocument()
+  })
+
   it('shows manager team attendance and admin office overview from the API', async () => {
     mocks.auth.currentUser = { ...mocks.auth.currentUser, role: 'MANAGER' }
     renderPage()

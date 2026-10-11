@@ -1,6 +1,6 @@
 import { ArrowLeft, Compass } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/layouts/components/page-header'
 
