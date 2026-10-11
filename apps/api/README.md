@@ -25,6 +25,22 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Office workflows
+
+Apply the additive database migration before starting the API:
+
+```bash
+npx drizzle-kit migrate
+```
+
+The migration preserves existing users and treats them as approved. New public
+registrations are employee accounts in `PENDING` state and require an ADMIN
+decision at `/admin/registrations`.
+
+Attendance uses server time in `Asia/Dhaka` by default. Configure
+`OFFICE_TIMEZONE`, `OFFICE_WORKDAYS` (Sunday is `0`), `OFFICE_HOLIDAYS`,
+`OFFICE_START_TIME`, and `OFFICE_GRACE_END_TIME` in `.env` as needed.
+
 ## Project setup
 
 ```bash

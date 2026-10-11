@@ -3,6 +3,7 @@ import type {
   AuthUser,
   LoginCredentials,
   LoginResponse,
+  RegistrationInput,
 } from '@/features/auth/types/auth.types'
 
 export const authApi = {
@@ -16,6 +17,14 @@ export const authApi = {
 
   async getCurrentUser(): Promise<AuthUser> {
     const response = await api.get<AuthUser>('/auth/me', {
+      skipAuthRefresh: true,
+    })
+    return response.data
+  },
+
+  async register(input: RegistrationInput): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/auth/register', input, {
+      skipAuthHeader: true,
       skipAuthRefresh: true,
     })
     return response.data

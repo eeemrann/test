@@ -13,12 +13,13 @@ type EmployeeSelectorProps = {
   restrictToTeamId?: string | null
   disabled?: boolean
   error?: string
+  purpose?: 'create' | 'reassign'
 }
 
-export function EmployeeSelector({ id, value, onChange, restrictToTeamId, disabled = false, error }: EmployeeSelectorProps) {
+export function EmployeeSelector({ id, value, onChange, restrictToTeamId, disabled = false, error, purpose = 'create' }: EmployeeSelectorProps) {
   const auth = useAuth()
   const [search, setSearch] = useState('')
-  const usersQuery = useAssignableUsers({ userId: auth.currentUser?.id, search })
+  const usersQuery = useAssignableUsers({ userId: auth.currentUser?.id, search, purpose })
   const users = useMemo(() => {
     const allUsers = flattenAssignableUsers(usersQuery.data?.pages)
     if (restrictToTeamId === undefined) return allUsers
@@ -35,7 +36,7 @@ export function EmployeeSelector({ id, value, onChange, restrictToTeamId, disabl
           id={`${id}-search`}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search active employees"
+          placeholder="Search eligible active users"
           className="h-10 pl-9"
           disabled={disabled}
           aria-describedby={error ? `${id}-error` : undefined}
@@ -53,7 +54,7 @@ export function EmployeeSelector({ id, value, onChange, restrictToTeamId, disabl
       ) : users.length === 0 ? (
         <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">No eligible active employees found.</p>
       ) : (
-        <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-2" role="listbox" aria-label="Active employees" aria-invalid={Boolean(error)}>
+        <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-2" role="listbox" aria-label="Eligible active users" aria-invalid={Boolean(error)}>
           {users.map((user) => {
             const isSelected = user.id === value
             return (
@@ -67,7 +68,7 @@ export function EmployeeSelector({ id, value, onChange, restrictToTeamId, disabl
                 className={`w-full rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${isSelected ? 'border-blue-300 bg-blue-50' : 'border-transparent hover:border-slate-200 hover:bg-slate-50'}`}
               >
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-900"><UsersRound className="size-4 text-slate-500" aria-hidden="true" />{user.fullName}</span>
-                <span className="mt-0.5 block pl-6 text-xs text-slate-500">{user.email} · {user.teamId ? 'Assigned team' : 'No team'}</span>
+                <span className="mt-0.5 block pl-6 text-xs text-slate-500">{user.email} · {user.role ?? 'EMPLOYEE'} · {user.teamId ? 'Assigned team' : 'No team'}</span>
               </button>
             )
           })}

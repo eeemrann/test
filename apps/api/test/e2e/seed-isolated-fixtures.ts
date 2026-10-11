@@ -81,6 +81,9 @@ export async function seedIsolatedFixtures(databaseUrl = getIsolatedDatabaseUrl(
           role: account.role,
           teamId,
           isActive: true,
+          approvalStatus: 'APPROVED',
+          approvedAt: new Date(),
+          attendanceEligibleFrom: new Date(),
         });
         createdUsers += 1;
       }

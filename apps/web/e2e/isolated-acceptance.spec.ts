@@ -12,7 +12,7 @@ const requireIsolatedAccounts = () => {
 }
 
 async function chooseEmployee(page: Page, name: string) {
-  const option = page.getByRole('listbox', { name: 'Active employees' }).getByRole('option').filter({ hasText: name }).first()
+  const option = page.getByRole('listbox', { name: 'Eligible active users' }).getByRole('option').filter({ hasText: name }).first()
   await expect(option).toBeVisible()
   await option.click()
 }

@@ -95,6 +95,7 @@ export type AssignableUser = {
   fullName: string
   email: string
   teamId: string | null
+  role?: 'EMPLOYEE' | 'MANAGER' | 'ADMIN'
 }
 
 export type PaginatedAssignableUsers = {

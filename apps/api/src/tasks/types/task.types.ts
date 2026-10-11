@@ -48,6 +48,7 @@ export interface AssignableUserResponse {
   fullName: string;
   email: string;
   teamId: string | null;
+  role?: User['role'];
 }
 
 export interface TaskActivityResponse {

@@ -16,7 +16,7 @@ test.describe('isolated taskboard browser workflow', () => {
     await page.getByRole('button', { name: 'New task' }).click()
     await expect(page.getByRole('heading', { name: 'Create a new task' })).toBeVisible()
     await page.getByLabel('Task title').fill(title)
-    const employeeOption = page.getByRole('listbox', { name: 'Active employees' }).getByRole('option').first()
+    const employeeOption = page.getByRole('listbox', { name: 'Eligible active users' }).getByRole('option').first()
     await expect(employeeOption).toBeVisible()
     await employeeOption.click()
     await page.getByRole('button', { name: 'Create task' }).click()

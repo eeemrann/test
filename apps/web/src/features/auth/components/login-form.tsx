@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LockKeyhole, TriangleAlert } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -121,6 +121,9 @@ export function LoginForm() {
           <Button type="submit" className="w-full" disabled={auth.isLoggingIn}>
             {auth.isLoggingIn ? 'Signing in…' : 'Sign in'}
           </Button>
+          <p className="text-center text-sm text-slate-500">
+            Need an account? <Link className="font-medium text-blue-700 hover:underline" to="/register">Register here</Link>
+          </p>
         </form>
       </CardContent>
     </Card>

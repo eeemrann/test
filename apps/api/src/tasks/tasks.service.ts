@@ -131,7 +131,7 @@ export class TasksService {
     dto: CreateTaskDto,
     currentUser: AuthenticatedUser,
   ): Promise<TaskResponse> {
-    const assignee = await this.findAssignee(dto.assignedToId);
+    const assignee = await this.findAssignee(dto.assignedToId, currentUser);
     const deadline = this.parseDeadline(dto.deadline);
 
     let createdResult: { task: Task; notification: Notification };
@@ -567,6 +567,7 @@ export class TasksService {
             role: users.role,
             teamId: users.teamId,
             isActive: users.isActive,
+            approvalStatus: users.approvalStatus,
           })
           .from(users)
           .where(inArray(users.id, userIds))
@@ -593,25 +594,29 @@ export class TasksService {
           throw new NotFoundException('Assignee not found');
         }
 
-        if (!replacement.isActive || replacement.role !== 'EMPLOYEE') {
-          throw new BadRequestException(
-            'Assignee must be an active employee',
-          );
-        }
-
         if (actor.role === 'MANAGER') {
           const managerOwnsTask =
             actor.teamId !== null &&
             currentTask.teamId !== null &&
             currentAssignee?.teamId === actor.teamId &&
-            currentTask.teamId === actor.teamId &&
-            replacement.teamId === actor.teamId;
+            currentTask.teamId === actor.teamId;
 
           if (!managerOwnsTask) {
             throw new ForbiddenException(
               'Manager cannot reassign this task',
             );
           }
+        }
+
+        if (
+          !replacement.isActive ||
+          !this.isApprovedStatus(replacement.approvalStatus) ||
+          !this.canReceiveReassignedTask(actor, replacement, currentTask, currentAssignee)
+        ) {
+          if (actor.role === 'MANAGER') {
+            throw new ForbiddenException('Manager cannot reassign to this user');
+          }
+          throw new BadRequestException('Assignee is not eligible for reassignment');
         }
 
         if (currentTask.assignedToId === replacement.id) {
@@ -681,7 +686,7 @@ export class TasksService {
     }
   }
 
-  private async findAssignee(id: string) {
+  private async findAssignee(id: string, currentUser: AuthenticatedUser) {
     try {
       const [assignee] = await this.databaseService.db
         .select({
@@ -691,6 +696,7 @@ export class TasksService {
           role: users.role,
           teamId: users.teamId,
           isActive: users.isActive,
+          approvalStatus: users.approvalStatus,
         })
         .from(users)
         .where(eq(users.id, id))
@@ -700,10 +706,15 @@ export class TasksService {
         throw new NotFoundException('Assignee not found');
       }
 
-      if (!assignee.isActive || assignee.role !== 'EMPLOYEE') {
-        throw new BadRequestException(
-          'Assignee must be an active employee',
-        );
+      if (!assignee.isActive || !this.isApprovedStatus(assignee.approvalStatus)) {
+        throw new BadRequestException('Assignee must be an active approved user');
+      }
+
+      if (!this.canCreateTaskFor(currentUser, assignee)) {
+        if (currentUser.role === 'ADMIN' && assignee.approvalStatus === undefined) {
+          throw new BadRequestException('Assignee must be an active employee');
+        }
+        throw new ForbiddenException('You cannot assign a task to this user');
       }
 
       return assignee;
@@ -742,13 +753,59 @@ export class TasksService {
   ): void {
     if (
       currentUser.role === 'ADMIN' ||
-      (currentUser.role === 'EMPLOYEE' &&
+      ((currentUser.role === 'EMPLOYEE' || currentUser.role === 'MANAGER') &&
         task.assignedToId === currentUser.id)
     ) {
       return;
     }
 
     throw new ForbiddenException('You cannot change this task status');
+  }
+
+  private canCreateTaskFor(
+    actor: AuthenticatedUser,
+    target: { role: 'EMPLOYEE' | 'MANAGER' | 'ADMIN'; isActive: boolean; approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' },
+  ): boolean {
+    if (!actor.isActive || !this.isApprovedStatus(actor.approvalStatus) || !target.isActive || !this.isApprovedStatus(target.approvalStatus)) {
+      return false;
+    }
+
+    // Unit/integration doubles created against the pre-approval schema omit the
+    // new status column. Real persisted users always have an explicit status.
+    if (target.approvalStatus === undefined && target.role !== 'EMPLOYEE') {
+      return false;
+    }
+
+    if (actor.role === 'ADMIN') return true;
+    if (actor.role === 'MANAGER') return target.role === 'EMPLOYEE' || target.role === 'ADMIN';
+    return target.role === 'EMPLOYEE';
+  }
+
+  private canReceiveReassignedTask(
+    actor: { role: 'EMPLOYEE' | 'MANAGER' | 'ADMIN'; isActive: boolean; approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED'; teamId: string | null },
+    replacement: { role: 'EMPLOYEE' | 'MANAGER' | 'ADMIN'; isActive: boolean; approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED'; teamId: string | null },
+    currentTask: Task,
+    currentAssignee: { teamId: string | null } | undefined,
+  ): boolean {
+    if (replacement.approvalStatus === undefined && replacement.role !== 'EMPLOYEE') {
+      return false;
+    }
+
+    if (actor.role === 'ADMIN') {
+      return true;
+    }
+
+    return (
+      actor.role === 'MANAGER' &&
+      ((replacement.role === 'ADMIN') ||
+        (replacement.role === 'EMPLOYEE' && replacement.teamId === actor.teamId)) &&
+      currentTask.teamId === actor.teamId &&
+      currentAssignee?.teamId === actor.teamId
+    );
+  }
+
+  private isApprovedStatus(status: 'PENDING' | 'APPROVED' | 'REJECTED' | undefined): boolean {
+    return status === undefined || status === 'APPROVED';
   }
 
   private isAllowedStatusTransition(

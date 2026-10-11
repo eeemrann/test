@@ -21,7 +21,6 @@ export function ReassignTaskDialog({ task, open, onClose, onSuccess }: ReassignT
   const [error, setError] = useState<string | null>(null)
 
   if (!open || !task || !auth.currentUser) return null
-  const restrictToTeamId = auth.currentUser.role === 'MANAGER' ? auth.currentUser.teamId : undefined
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -40,10 +39,10 @@ export function ReassignTaskDialog({ task, open, onClose, onSuccess }: ReassignT
   }
 
   return (
-    <DialogShell open={open} onClose={onClose} title="Reassign task" description="Only active employees can receive tasks. The backend rechecks team permissions before saving.">
+    <DialogShell open={open} onClose={onClose} title="Reassign task" description="Eligible active employees and administrators are shown. The backend rechecks team permissions before saving.">
       <form className="space-y-5" onSubmit={(event) => void submit(event)}>
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">Current assignee: <span className="font-medium text-slate-950">{task.assignee.fullName}</span><br /><span className="text-xs text-slate-500">{task.assignee.email} · {task.team?.name ?? 'No team'}</span></div>
-        <EmployeeSelector id="reassign-task-assignee" value={assigneeId} onChange={setAssigneeId} restrictToTeamId={restrictToTeamId} disabled={mutation.isPending} error={error ?? undefined} />
+        <EmployeeSelector id="reassign-task-assignee" value={assigneeId} onChange={setAssigneeId} disabled={mutation.isPending} error={error ?? undefined} purpose="reassign" />
         <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>Cancel</Button>
           <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Reassigning…' : 'Confirm reassignment'}</Button>

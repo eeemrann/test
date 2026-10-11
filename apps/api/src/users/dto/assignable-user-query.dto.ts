@@ -5,9 +5,14 @@ import {
   Max,
   MaxLength,
   Min,
+  IsIn,
 } from 'class-validator';
 
 export class AssignableUserQueryDto {
+  @IsOptional()
+  @IsIn(['create', 'reassign'])
+  purpose?: 'create' | 'reassign';
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

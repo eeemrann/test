@@ -1,11 +1,12 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { inArray } from 'drizzle-orm';
+import { inArray, like } from 'drizzle-orm';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { DatabaseService } from '../src/database/database.service.js';
-import { notifications } from '../src/database/schema.js';
+import { notifications, users } from '../src/database/schema.js';
+import { assertIsolatedDatabaseUrl } from './e2e/isolated-db.js';
 import { e2eAccountEmails, testPassword } from './e2e/accounts.js';
 
 const FIXTURE_TITLE = `phase-6-1-${Date.now()}`;
@@ -49,6 +50,25 @@ describe('Notifications inbox APIs (e2e)', () => {
     );
     await app.init();
     database = app.get(DatabaseService);
+    assertIsolatedDatabaseUrl(process.env.DATABASE_URL ?? '');
+
+    const fixtureUsers = await database.db
+      .select({ id: users.id })
+      .from(users)
+      .where(inArray(users.email, [
+        e2eAccountEmails.engineeringEmployee,
+        e2eAccountEmails.engineeringManager,
+      ]));
+    await database.db
+      .delete(notifications)
+      .where(
+        fixtureUsers.length > 0
+          ? inArray(
+              notifications.recipientUserId,
+              fixtureUsers.map((user) => user.id),
+            )
+          : like(notifications.title, 'phase-6-1-%'),
+      );
 
     employee = await login(
       e2eAccountEmails.engineeringEmployee,

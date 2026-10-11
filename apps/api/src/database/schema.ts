@@ -7,6 +7,7 @@ import {
   pgEnum,
   pgTable,
   timestamp,
+  date,
   uniqueIndex,
   uuid,
   varchar,
@@ -16,6 +17,23 @@ export const userRoleEnum = pgEnum('user_role', [
   'EMPLOYEE',
   'MANAGER',
   'ADMIN',
+]);
+
+export const approvalStatusEnum = pgEnum('approval_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+]);
+
+export const registrationActionEnum = pgEnum('registration_action', [
+  'SUBMITTED',
+  'APPROVED',
+  'REJECTED',
+]);
+
+export const attendanceCheckInStatusEnum = pgEnum('attendance_check_in_status', [
+  'PRESENT',
+  'LATE',
 ]);
 
 export const taskStatusEnum = pgEnum('task_status', [
@@ -80,11 +98,20 @@ export const users = pgTable(
     email: varchar('email', { length: 320 }).notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
     role: userRoleEnum('role').default('EMPLOYEE').notNull(),
+    approvalStatus: approvalStatusEnum('approval_status')
+      .default('APPROVED')
+      .notNull(),
     teamId: uuid('team_id').references(() => teams.id, {
       onDelete: 'set null',
       onUpdate: 'cascade',
     }),
     isActive: boolean('is_active').default(true).notNull(),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    rejectedAt: timestamp('rejected_at', { withTimezone: true, mode: 'date' }),
+    attendanceEligibleFrom: timestamp('attendance_eligible_from', {
+      withTimezone: true,
+      mode: 'date',
+    }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -94,6 +121,51 @@ export const users = pgTable(
     index('users_role_idx').on(table.role),
     check('users_full_name_not_blank', sql`length(trim(${table.fullName})) > 0`),
     check('users_email_not_blank', sql`length(trim(${table.email})) > 0`),
+  ],
+);
+
+export const registrationAudits = pgTable(
+  'registration_audits',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    actorUserId: uuid('actor_user_id').references(() => users.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    action: registrationActionEnum('action').notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index('registration_audits_user_id_idx').on(table.userId),
+    index('registration_audits_created_at_idx').on(table.createdAt),
+  ],
+);
+
+export const attendance = pgTable(
+  'attendance',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    attendanceDate: date('attendance_date', { mode: 'string' }).notNull(),
+    checkInAt: timestamp('check_in_at', { withTimezone: true, mode: 'date' })
+      .notNull(),
+    checkOutAt: timestamp('check_out_at', { withTimezone: true, mode: 'date' }),
+    checkInStatus: attendanceCheckInStatusEnum('check_in_status').notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex('attendance_user_date_unique').on(
+      table.userId,
+      table.attendanceDate,
+    ),
+    index('attendance_date_idx').on(table.attendanceDate),
+    index('attendance_user_date_idx').on(table.userId, table.attendanceDate),
   ],
 );
 
@@ -252,6 +324,32 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   notifications: many(notifications),
   taskActivities: many(taskActivities),
   refreshSessions: many(refreshSessions),
+  registrationAudits: many(registrationAudits, { relationName: 'registrationUser' }),
+  actedRegistrationAudits: many(registrationAudits, { relationName: 'registrationActor' }),
+  attendance: many(attendance),
+}));
+
+export const registrationAuditsRelations = relations(
+  registrationAudits,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [registrationAudits.userId],
+      references: [users.id],
+      relationName: 'registrationUser',
+    }),
+    actor: one(users, {
+      fields: [registrationAudits.actorUserId],
+      references: [users.id],
+      relationName: 'registrationActor',
+    }),
+  }),
+);
+
+export const attendanceRelations = relations(attendance, ({ one }) => ({
+  user: one(users, {
+    fields: [attendance.userId],
+    references: [users.id],
+  }),
 }));
 
 export const tasksRelations = relations(tasks, ({ many, one }) => ({
@@ -317,6 +415,9 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
+export type RegistrationAudit = typeof registrationAudits.$inferSelect;
+export type Attendance = typeof attendance.$inferSelect;
+export type NewAttendance = typeof attendance.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type TaskActivity = typeof taskActivities.$inferSelect;

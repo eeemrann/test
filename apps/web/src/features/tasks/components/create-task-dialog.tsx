@@ -104,7 +104,7 @@ export function CreateTaskDialog({ open, onClose, onSuccess }: CreateTaskDialogP
             {errors.deadline && <p id="create-task-deadline-error" className="text-sm text-rose-700">{errors.deadline}</p>}
           </div>
         </div>
-        <EmployeeSelector id="create-task-assignee" value={form.assignedToId} onChange={(assignedToId) => setForm({ ...form, assignedToId })} disabled={mutation.isPending} error={errors.assignedToId} />
+        <EmployeeSelector id="create-task-assignee" value={form.assignedToId} onChange={(assignedToId) => setForm({ ...form, assignedToId })} disabled={mutation.isPending} error={errors.assignedToId} purpose="create" />
         {submitError && <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">{submitError}</p>}
         <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={close} disabled={mutation.isPending}>Cancel</Button>

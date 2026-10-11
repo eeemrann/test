@@ -472,14 +472,19 @@ describe('Secure realtime notifications (e2e)', () => {
     expect(await noOpEvent).toBe(true);
 
     const noFailedTransactionEvent = noEvent(employeeSocket, 'notification:new');
-    await request(app.getHttpServer())
+    const managerAssignment = await request(app.getHttpServer())
       .post('/tasks')
       .set('Authorization', `Bearer ${admin.accessToken}`)
       .send({
-        title: `${FIXTURE_PREFIX}-invalid`,
+        title: `${FIXTURE_PREFIX}-admin-to-manager`,
         assignedToId: manager.userId,
       })
-      .expect(400);
+      .expect(201);
+    createdTaskIds.push(managerAssignment.body.id as string);
+    expect(managerAssignment.body.assignee).toMatchObject({
+      id: manager.userId,
+      role: 'MANAGER',
+    });
     expect(await noFailedTransactionEvent).toBe(true);
 
     const reassignmentRows = await database.db

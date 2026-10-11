@@ -15,7 +15,10 @@ import { e2eAccountEmails, testPassword } from './e2e/accounts.js';
 const DEMO_EMPLOYEE_EMAIL = e2eAccountEmails.engineeringEmployee;
 const DEMO_MANAGER_EMAIL = e2eAccountEmails.engineeringManager;
 const DEMO_ADMIN_EMAIL = e2eAccountEmails.admin;
-const EXPECTED_ACTIVE_EMPLOYEE_COUNT = process.env.E2E_EMPLOYEE_EMAIL ? 4 : 2;
+const EXPECTED_ACTIVE_EMPLOYEE_COUNT =
+  process.env.E2E_ISOLATED_DATABASE === 'true' || process.env.E2E_EMPLOYEE_EMAIL
+    ? 4
+    : 2;
 const TASK_PREFIX = `phase-5-2-${Date.now()}`;
 
 function password(key: string): string {

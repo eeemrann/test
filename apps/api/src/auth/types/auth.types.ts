@@ -2,10 +2,16 @@ import type { User } from '../../database/schema.js';
 
 export type AuthenticatedUser = Pick<
   User,
-  'id' | 'fullName' | 'email' | 'role' | 'teamId' | 'isActive'
+  | 'id'
+  | 'fullName'
+  | 'email'
+  | 'role'
+  | 'teamId'
+  | 'isActive'
+  | 'approvalStatus'
 >;
 
-export type LoginUser = Omit<AuthenticatedUser, 'isActive'>;
+export type LoginUser = Omit<AuthenticatedUser, 'isActive' | 'approvalStatus'>;
 
 export interface AccessTokenPayload {
   sub: string;

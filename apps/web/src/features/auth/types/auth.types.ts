@@ -13,6 +13,7 @@ export type LoginUser = {
   email: string
   role: UserRole
   teamId: string | null
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
 }
 
 export type AuthUser = LoginUser & {
@@ -24,6 +25,13 @@ export type LoginResponse = {
   tokenType: 'Bearer'
   expiresIn: 900
   user: LoginUser
+}
+
+export type RegistrationInput = {
+  fullName: string
+  email: string
+  password: string
+  confirmPassword: string
 }
 
 export type AuthStatus =

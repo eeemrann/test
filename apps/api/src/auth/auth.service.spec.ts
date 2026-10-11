@@ -163,6 +163,79 @@ describe('AuthService', () => {
     });
   });
 
+  it('rejects pending users before password verification can create a session', async () => {
+    const user = makeUser(
+      { approvalStatus: 'PENDING', isActive: false },
+      passwordHash,
+    );
+    const { service, signAsync } = createService(user);
+
+    await expect(service.login(user.email, TEST_PASSWORD)).rejects.toMatchObject({
+      status: 401,
+      message: 'Invalid email or password',
+    });
+    expect(signAsync).not.toHaveBeenCalled();
+  });
+
+  it('submits a registration as an inactive pending employee and writes an audit entry', async () => {
+    const userReturning = vi.fn().mockResolvedValueOnce([
+      { id: '44444444-4444-4444-8444-444444444444' },
+    ]);
+    const userValues = vi.fn().mockReturnValue({ returning: userReturning });
+    const auditValues = vi.fn().mockResolvedValue(undefined);
+    const txInsert = vi
+      .fn()
+      .mockReturnValueOnce({ values: userValues })
+      .mockReturnValueOnce({ values: auditValues });
+    const transaction = vi.fn(async (callback: (tx: unknown) => unknown) =>
+      callback({ insert: txInsert }),
+    );
+    const { service } = createService(undefined, transaction);
+
+    const result = await service.register(
+      '  New Employee  ',
+      'NEW@OFFICE.LOCAL',
+      'Register.Password.123',
+      'Register.Password.123',
+      'unit-test-ip',
+    );
+
+    expect(result.message).toContain('waiting for admin approval');
+    expect(userValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fullName: 'New Employee',
+        email: 'new@office.local',
+        role: 'EMPLOYEE',
+        approvalStatus: 'PENDING',
+        isActive: false,
+      }),
+    );
+    expect(auditValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: '44444444-4444-4444-8444-444444444444',
+        action: 'SUBMITTED',
+      }),
+    );
+  });
+
+  it('maps a database unique violation to a duplicate-registration conflict', async () => {
+    const transaction = vi.fn().mockRejectedValue({ code: '23505' });
+    const { service } = createService(undefined, transaction);
+
+    await expect(
+      service.register(
+        'Duplicate Employee',
+        'duplicate@office.local',
+        'Register.Password.123',
+        'Register.Password.123',
+        'unit-test-duplicate-ip',
+      ),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'An account with this email already exists',
+    });
+  });
+
   it('rejects an unknown email with the same generic credentials error', async () => {
     const { service } = createService(undefined);
 

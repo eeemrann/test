@@ -50,5 +50,7 @@ export async function ensureIsolatedDatabase(): Promise<string> {
   return databaseUrl;
 }
 
-loadLocalEnvironment();
-await ensureIsolatedDatabase();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  loadLocalEnvironment();
+  await ensureIsolatedDatabase();
+}

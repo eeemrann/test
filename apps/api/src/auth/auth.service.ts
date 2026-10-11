@@ -1,5 +1,8 @@
 import {
+  BadRequestException,
   ForbiddenException,
+  ConflictException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -13,6 +16,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import { DatabaseService } from '../database/database.service.js';
 import {
   refreshSessions,
+  registrationAudits,
   users,
   type User,
 } from '../database/schema.js';
@@ -29,12 +33,18 @@ const REFRESH_COOKIE_NAME = 'office_refresh_token';
 const REFRESH_COOKIE_PATH = '/auth';
 const DEFAULT_REFRESH_TOKEN_TTL_DAYS = 7;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+const REGISTRATION_WINDOW_MS = 15 * 60 * 1000;
+const REGISTRATION_MAX_ATTEMPTS = 10;
 
 @Injectable()
 export class AuthService {
   private readonly refreshTokenTtlMs: number;
   private readonly allowedOrigins: ReadonlySet<string>;
   private readonly cookieSecure: boolean;
+  private readonly registrationAttempts = new Map<
+    string,
+    { windowStartedAt: number; count: number }
+  >();
 
   constructor(
     private readonly configService: ConfigService,
@@ -81,7 +91,7 @@ export class AuthService {
       );
     }
 
-    if (!user || !user.isActive) {
+    if (!user || !this.isApprovedActiveUser(user)) {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
@@ -165,7 +175,13 @@ export class AuthService {
         const [user] = await tx
           .select()
           .from(users)
-          .where(and(eq(users.id, session.userId), eq(users.isActive, true)))
+          .where(
+            and(
+              eq(users.id, session.userId),
+              eq(users.isActive, true),
+              eq(users.approvalStatus, 'APPROVED'),
+            ),
+          )
           .limit(1);
 
         if (!user || !user.isActive) {
@@ -246,6 +262,11 @@ export class AuthService {
     };
   }
 
+  toPublicCurrentUser(user: AuthenticatedUser): Omit<AuthenticatedUser, 'approvalStatus'> {
+    const { approvalStatus: _approvalStatus, ...publicUser } = user;
+    return publicUser;
+  }
+
   extractRefreshToken(request: Request): string | undefined {
     const cookieHeader = request.headers.cookie;
 
@@ -301,11 +322,66 @@ export class AuthService {
   async findActiveUserById(id: string): Promise<AuthenticatedUser | null> {
     const user = await this.findUserById(id);
 
-    if (!user || !user.isActive) {
+    if (!user || !this.isApprovedActiveUser(user)) {
       return null;
     }
 
     return this.toAuthenticatedUser(user);
+  }
+
+  async register(
+    fullName: string,
+    email: string,
+    password: string,
+    confirmPassword: string,
+    requesterKey: string,
+  ): Promise<{ message: string }> {
+    this.assertRegistrationRateLimit(requesterKey);
+
+    if (password !== confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const passwordHash = await bcrypt.hash(password, 12);
+    const now = new Date();
+
+    try {
+      await this.databaseService.db.transaction(async (tx) => {
+        const [user] = await tx
+          .insert(users)
+          .values({
+            fullName: fullName.trim(),
+            email: normalizedEmail,
+            passwordHash,
+            role: 'EMPLOYEE',
+            approvalStatus: 'PENDING',
+            isActive: false,
+          })
+          .returning({ id: users.id });
+
+        if (!user) {
+          throw new Error('Registration insert returned no row');
+        }
+
+        await tx.insert(registrationAudits).values({
+          userId: user.id,
+          action: 'SUBMITTED',
+          createdAt: now,
+        });
+      });
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        throw new ConflictException('An account with this email already exists');
+      }
+
+      throw new InternalServerErrorException('Registration service unavailable');
+    }
+
+    return {
+      message:
+        'Registration submitted successfully. Your account is waiting for admin approval.',
+    };
   }
 
   private generateRefreshToken(): string {
@@ -350,6 +426,56 @@ export class AuthService {
     return user;
   }
 
+  private isApprovedActiveUser(user: User): boolean {
+    return (
+      user.isActive &&
+      (user.approvalStatus === 'APPROVED' || user.approvalStatus === undefined)
+    );
+  }
+
+  private assertRegistrationRateLimit(key: string): void {
+    const now = Date.now();
+    const existing = this.registrationAttempts.get(key);
+
+    if (!existing || now - existing.windowStartedAt >= REGISTRATION_WINDOW_MS) {
+      this.registrationAttempts.set(key, { windowStartedAt: now, count: 1 });
+      return;
+    }
+
+    if (existing.count >= REGISTRATION_MAX_ATTEMPTS) {
+      throw new HttpException(
+        'Too many registration attempts. Please try again later.',
+        429,
+      );
+    }
+
+    existing.count += 1;
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    let current: unknown = error;
+    for (let depth = 0; depth < 3 && current; depth += 1) {
+      if (
+        typeof current === 'object' &&
+        'code' in current &&
+        (current as { code?: unknown }).code === '23505'
+      ) {
+        return true;
+      }
+
+      if (current instanceof Error) {
+        if (/duplicate key|unique constraint/i.test(current.message)) {
+          return true;
+        }
+        current = current.cause;
+      } else {
+        current = null;
+      }
+    }
+
+    return false;
+  }
+
   private toLoginUser(user: User): LoginUser {
     return {
       id: user.id,
@@ -364,6 +490,7 @@ export class AuthService {
     return {
       ...this.toLoginUser(user),
       isActive: user.isActive,
+      approvalStatus: user.approvalStatus,
     };
   }
 }

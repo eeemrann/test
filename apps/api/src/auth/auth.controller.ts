@@ -12,6 +12,7 @@ import {
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import type { AuthenticatedUser } from './types/auth.types.js';
 
@@ -22,6 +23,17 @@ type AuthenticatedRequest = Request & {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Post('register')
+  async register(@Body() registerDto: RegisterDto, @Req() request: Request) {
+    return this.authService.register(
+      registerDto.fullName,
+      registerDto.email,
+      registerDto.password,
+      registerDto.confirmPassword,
+      request.ip ?? request.socket.remoteAddress ?? 'unknown',
+    );
+  }
 
   @Post('login')
   async login(
@@ -72,7 +84,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getCurrentUser(@Req() request: AuthenticatedRequest): AuthenticatedUser {
-    return request.user;
+  getCurrentUser(@Req() request: AuthenticatedRequest) {
+    return this.authService.toPublicCurrentUser(request.user);
   }
 }

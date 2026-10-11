@@ -9,6 +9,7 @@ import {
   loadLocalEnvironment,
 } from './isolated-db.js';
 import {
+  attendance,
   notifications,
   refreshSessions,
   taskActivities,
@@ -58,12 +59,26 @@ try {
     .from(users)
     .where(inArray(users.email, isolatedAccounts.map((account) => account.email)));
   if (fixtureUsers.length > 0) {
+    await db.delete(attendance).where(
+      inArray(attendance.userId, fixtureUsers.map((user) => user.id)),
+    );
     await db.delete(refreshSessions).where(
       inArray(refreshSessions.userId, fixtureUsers.map((user) => user.id)),
     );
   }
 
-  console.log(`isolated cleanup removed ${ids.length} acceptance task(s) and fixture sessions`);
+  const browserUsers = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(like(users.email, 'browser-%@office.local'));
+  if (browserUsers.length > 0) {
+    const browserUserIds = browserUsers.map((user) => user.id);
+    await db.delete(attendance).where(inArray(attendance.userId, browserUserIds));
+    await db.delete(refreshSessions).where(inArray(refreshSessions.userId, browserUserIds));
+    await db.delete(users).where(inArray(users.id, browserUserIds));
+  }
+
+  console.log(`isolated cleanup removed ${ids.length} acceptance task(s), ${browserUsers.length} browser registration(s), fixture attendance, and fixture sessions`);
 } finally {
   await pool.end();
 }

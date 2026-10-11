@@ -10,6 +10,7 @@ import {
   Settings,
   UserRound,
   UsersRound,
+  ShieldCheck,
 } from 'lucide-react'
 import type { UserRole } from '@/features/auth/types/auth.types'
 
@@ -99,6 +100,13 @@ export const navigationGroups: readonly NavigationGroup[] = [
         to: '/app/settings',
         icon: Settings,
         description: 'Manage workspace preferences',
+      },
+      {
+        label: 'Registration approvals',
+        to: '/app/admin/registrations',
+        icon: ShieldCheck,
+        description: 'Review pending account registrations',
+        roles: ['ADMIN'],
       },
     ],
   },

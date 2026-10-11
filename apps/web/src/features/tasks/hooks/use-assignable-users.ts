@@ -7,15 +7,17 @@ const ASSIGNABLE_USERS_PAGE_SIZE = 100
 export function useAssignableUsers({
   userId,
   search = '',
+  purpose = 'create',
   enabled = true,
 }: {
   userId: string | undefined
   search?: string
+  purpose?: 'create' | 'reassign'
   enabled?: boolean
 }) {
   return useInfiniteQuery({
-    queryKey: ['assignable-users', userId, search],
-    queryFn: ({ pageParam }) => getAssignableUsers({ page: pageParam, limit: ASSIGNABLE_USERS_PAGE_SIZE, search: search || undefined }),
+    queryKey: ['assignable-users', userId, search, purpose],
+    queryFn: ({ pageParam }) => getAssignableUsers({ page: pageParam, limit: ASSIGNABLE_USERS_PAGE_SIZE, search: search || undefined, purpose }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.page < lastPage.pagination.totalPages

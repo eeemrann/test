@@ -106,16 +106,19 @@ export async function getAssignableUsers({
   page = 1,
   limit = 100,
   search,
+  purpose,
 }: {
   page?: number
   limit?: number
   search?: string
+  purpose?: 'create' | 'reassign'
 } = {}): Promise<PaginatedAssignableUsers> {
   const response = await api.get<PaginatedAssignableUsers>('/users/assignable', {
     params: {
       page,
       limit,
       ...(search ? { search } : {}),
+      ...(purpose ? { purpose } : {}),
     },
   })
   return response.data
